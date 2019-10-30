@@ -16,6 +16,7 @@ type MessageInterface interface {
 
 	Text() string
 	User() string
+	GetChannel() string
 }
 
 // Message is the Message structure for received and sent messages using Slack
@@ -35,6 +36,10 @@ func (m Message) Text() string {
 // User returns the message text
 func (m Message) User() string {
 	return m.UserID
+}
+
+func (m Message) GetChannel() string {
+	return m.Channel
 }
 
 // IsMessage checks if it is a Message or some other kind of processing information
