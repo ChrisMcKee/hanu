@@ -16,16 +16,16 @@ type MessageInterface interface {
 
 	Text() string
 	User() string
-	GetChannel() string
+	Channel() string
 }
 
 // Message is the Message structure for received and sent messages using Slack
 type Message struct {
-	ID      uint64 `json:"id"`
-	Type    string `json:"type"`
-	Channel string `json:"channel"`
-	UserID  string `json:"user"`
-	Message string `json:"text"`
+	ID        uint64 `json:"id"`
+	Type      string `json:"type"`
+	ChannelId string `json:"channel"`
+	UserID    string `json:"user"`
+	Message   string `json:"text"`
 }
 
 // Text returns the message text
@@ -38,8 +38,8 @@ func (m Message) User() string {
 	return m.UserID
 }
 
-func (m Message) GetChannel() string {
-	return m.Channel
+func (m Message) Channel() string {
+	return m.ChannelId
 }
 
 // IsMessage checks if it is a Message or some other kind of processing information
@@ -102,7 +102,7 @@ func (m Message) IsHelpRequest() bool {
 
 // IsDirectMessage checks if the message is received using a direct messaging channel
 func (m Message) IsDirectMessage() bool {
-	return strings.HasPrefix(m.Channel, "D")
+	return strings.HasPrefix(m.ChannelId, "D")
 }
 
 // IsMentionFor checks if the given user was mentioned with the message
