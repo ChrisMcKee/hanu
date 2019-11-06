@@ -3,6 +3,8 @@ package hanu
 import (
 	"context"
 	"fmt"
+	"log"
+	"os"
 
 	"github.com/nlopes/slack"
 )
@@ -20,13 +22,31 @@ type Bot struct {
 // New creates a new bot
 func New(token string) (*Bot, error) {
 	api := slack.New(token)
-	id, err := api.GetUserIdentity()
-	if err != nil {
-		return nil, err
+
+	r, e  := api.AuthTest()
+	if e != nil {
+		return nil, e
 	}
 
 	rtm := api.NewRTM()
-	bot := &Bot{RTM: rtm, ID: id.User.ID}
+	bot := &Bot{RTM: rtm, ID: r.UserID}
+	return bot, nil
+}
+
+// New creates a new bot with Debug
+func NewDebug(token string) (*Bot, error) {
+	api := slack.New(token,
+		slack.OptionDebug(true),
+		slack.OptionLog(log.New(os.Stdout, "slack-bot: ", log.Lshortfile|log.LstdFlags)),
+	)
+
+	r, e  := api.AuthTest()
+	if e != nil {
+		return nil, e
+	}
+
+	rtm := api.NewRTM()
+	bot := &Bot{RTM: rtm, ID: r.UserID}
 	return bot, nil
 }
 
@@ -136,6 +156,7 @@ func (b *Bot) sendHelp(msg MessageInterface) {
 
 // Listen for message on socket
 func (b *Bot) Listen(ctx context.Context) {
+	go b.RTM.ManageConnection()
 
 	for {
 		select {

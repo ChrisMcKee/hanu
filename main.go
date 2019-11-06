@@ -148,7 +148,7 @@ func (b *Bot) Listen() {
 		if websocket.JSON.Receive(b.Socket, &msg) == nil {
 			go b.process(msg)
 
-			// Clean up message after processign it
+			// Clean up message after processing it
 			msg = Message{}
 		}
 	}
