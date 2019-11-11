@@ -3,10 +3,10 @@ package hanu
 import (
 	"context"
 	"fmt"
+	"github.com/nlopes/slack"
 	"log"
 	"os"
-
-	"github.com/nlopes/slack"
+	"strings"
 )
 
 // Bot is the main object
@@ -96,7 +96,7 @@ func (b *Bot) searchCommand(msg Message) bool {
 	for i := 0; i < len(b.Commands); i++ {
 		cmd = b.Commands[i]
 
-		match, err := cmd.Get().Match(msg.Text())
+		match, err := cmd.Get().Match(strings.ToLower(msg.Text()))
 		if err == nil {
 			cmd.Handle(NewConversation(match, msg, b))
 			return true

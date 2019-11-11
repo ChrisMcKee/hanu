@@ -45,7 +45,7 @@ func (c *Conversation) Reply(text string, a ...interface{}) {
 	c.bot.Say(c.Message().Channel(), prefix+text, a...)
 }
 
-// String return string paramter
+// String return string parameter
 func (c Conversation) String(name string) (string, error) {
 	return c.match.String(name)
 }
