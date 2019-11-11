@@ -26,7 +26,7 @@ func NewMessage(ev *slack.MessageEvent) Message {
 	msg.ChannelID = ev.Channel
 	msg.Message = ev.Text
 	msg.OriginalMessage = ev.Text
-	msg.UserID = ev.Username
+	msg.UserID = ev.User
 	msg.Type = ev.Type
 	return msg
 }
