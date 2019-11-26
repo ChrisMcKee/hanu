@@ -5,7 +5,7 @@
   branch = "master"
   name = "github.com/ChrisMcKee/allot"
   packages = ["."]
-  revision = "1f2349af5ccd74c1a8d8fe4d1bf688645b628321"
+  revision = "cc1ad4ee012300df58bbf8f03974f972bc1efe39"
 
 [[projects]]
   name = "github.com/gorilla/websocket"
@@ -34,7 +34,7 @@
   branch = "master"
   name = "golang.org/x/net"
   packages = ["websocket"]
-  revision = "8a410e7b638dca158bf9e766925842f6651ff828"
+  revision = "ffdde105785063a81acd95bdf89ea53f6e0aac2d"
 
 [solve-meta]
   analyzer-name = "dep"
