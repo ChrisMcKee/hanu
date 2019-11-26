@@ -41,12 +41,12 @@ func (c Command) Handle(conv ConversationInterface) {
 	go c.handler(conv)
 }
 
-// Get returns the platzhalter command
+// Get returns the command
 func (c Command) Get() allot.CommandInterface {
 	return c.command
 }
 
-// Set defines the platzhalter command
+// Set defines the command
 func (c *Command) Set(cmd allot.CommandInterface) {
 	c.command = cmd
 }
