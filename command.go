@@ -1,7 +1,7 @@
 package hanu
 
 import (
-	"github.com/sbstjn/allot"
+	"github.com/ChrisMcKee/allot"
 )
 
 // Handler is the interface for the handler function

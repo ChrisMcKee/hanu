@@ -27,7 +27,7 @@
 
 [[constraint]]
   branch = "master"
-  name = "github.com/sbstjn/allot"
+  name = "github.com/ChrisMcKee/allot"
 
 [[constraint]]
   branch = "master"

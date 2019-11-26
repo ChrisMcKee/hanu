@@ -5,7 +5,7 @@ import (
 
 	"golang.org/x/net/websocket"
 
-	"github.com/sbstjn/allot"
+	"github.com/ChrisMcKee/allot"
 )
 
 type ConnectionMock struct{}

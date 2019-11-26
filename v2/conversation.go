@@ -1,7 +1,7 @@
 package hanu
 
 import (
-	"github.com/sbstjn/allot"
+	"github.com/ChrisMcKee/allot"
 )
 
 // Convo is a shorthand for ConversationInterface

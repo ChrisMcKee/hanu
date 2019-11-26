@@ -3,7 +3,7 @@ package hanu
 import (
 	"testing"
 
-	"github.com/sbstjn/allot"
+	"github.com/ChrisMcKee/allot"
 )
 
 type SayerMock struct {

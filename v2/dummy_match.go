@@ -1,6 +1,6 @@
 package hanu
 
-import "github.com/sbstjn/allot"
+import "github.com/ChrisMcKee/allot"
 
 type dummyMatch struct {
 }
