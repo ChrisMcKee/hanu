@@ -1,6 +1,6 @@
 # hanu `<forked>` - Go for Slack Bots!
 
-- [![MIT License](https://badgen.now.sh/badge/License/MIT/blue)](LICENSE.md)
+[![MIT License](https://badgen.now.sh/badge/License/MIT/blue)](LICENSE.md)
 
 The `Go` framework **hanu** is your best friend to create [Slack](https://slackhq.com) bots! **hanu** uses [allot](https://github.com/ChrisMcKee/allot) for easy command and request parsing (e.g. `whisper <word>`) and runs fine as a [Heroku worker](https://devcenter.heroku.com/articles/background-jobs-queueing). All you need is a [Slack API token](https://api.slack.com/bot-users) and you can create your first bot within seconds! Just have a look at the [hanu-example](https://github.com/sbstjn/hanu-example) bot or [read my tutorial](https://sbstjn.com/host-golang-slackbot-on-heroku-with-hanu.html) …
 
