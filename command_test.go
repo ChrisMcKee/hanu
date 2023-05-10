@@ -42,3 +42,24 @@ func TestHandle(t *testing.T) {
 	conv := NewConversation(match, msg, nil)
 	cmd.Handle(conv)
 }
+
+func TestHandleComplex(t *testing.T) {
+	cmd := NewCommand(
+		"cmd <key> <test|prod|dev> <env> <email>",
+		"Description",
+		func(conv Convo) {
+			str, _ := conv.String("key")
+			if str != "name" {
+				t.Errorf("param <key> should have value \"name\"")
+			}
+		},
+	)
+
+	msg := Message{}
+	msg.SetText("cmd name")
+
+	match, _ := cmd.Get().Match(msg.Text())
+
+	conv := NewConversation(match, msg, nil)
+	cmd.Handle(conv)
+}
