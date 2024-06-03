@@ -77,7 +77,7 @@ func (m *Message) StripMention(user string) string {
 	text := m.Text()
 
 	if strings.HasPrefix(text, prefix) {
-		return text[len(prefix):len(text)]
+		return text[len(prefix):]
 	}
 
 	return text

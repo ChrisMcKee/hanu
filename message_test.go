@@ -48,7 +48,7 @@ func TestStripMention(t *testing.T) {
 	msg := Message{}
 	msg.SetText("<@test> help")
 
-	msg.StripMention("test")
+	msg.Message = msg.StripMention("test")
 
 	if msg.Text() != "help" {
 		t.Errorf("msg.Text must be 'help', is \"%s\"", msg.Text())
@@ -76,8 +76,8 @@ func TestStripFormatting(t *testing.T) {
 		msg := Message{}
 		msg.SetText(set.in)
 
-		msg.StripMention("test")
-		msg.StripLinkMarkup()
+		msg.Message = msg.StripMention("test")
+		msg.Message = msg.StripLinkMarkup()
 
 		if msg.Text() != set.out {
 			t.Errorf("Failed to strip markup: \n Got: %s\n Expected: %s", msg.Text(), set.out)
