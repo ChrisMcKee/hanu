@@ -17,7 +17,9 @@ type Bot struct {
 	Commands          []CommandInterface
 	ReplyOnly         bool
 	CmdPrefix         string
+	socketmodeHandler *socketmode.SocketmodeHandler
 	unknownCmdHandler Handler
+	listenerEnabled   bool
 }
 
 // New creates a new bot
@@ -37,7 +39,12 @@ func New(token string, appToken string) (*Bot, error) {
 		return nil, e
 	}
 
-	bot := &Bot{SocketClient: socketClient, ID: r.UserID}
+	bot := &Bot{
+		SocketClient:      socketClient,
+		ID:                r.UserID,
+		socketmodeHandler: socketmode.NewSocketmodeHandler(socketClient),
+	}
+
 	return bot, nil
 }
 
@@ -60,7 +67,12 @@ func NewDebug(token string, appToken string) (*Bot, error) {
 		return nil, e
 	}
 
-	bot := &Bot{SocketClient: socketClient, ID: r.UserID}
+	bot := &Bot{
+		SocketClient:      socketClient,
+		ID:                r.UserID,
+		socketmodeHandler: socketmode.NewSocketmodeHandler(socketClient),
+	}
+
 	return bot, nil
 }
 
@@ -177,19 +189,18 @@ func middlewareEventsAPIWithBot(b *Bot) socketmode.SocketmodeHandlerFunc {
 
 // Listen for message on socket
 func (b *Bot) Listen(ctx context.Context) {
-	socketmodeHandler := socketmode.NewSocketmodeHandler(b.SocketClient)
-
-	socketmodeHandler.Handle(socketmode.EventTypeConnecting, middlewareConnecting)
-	socketmodeHandler.Handle(socketmode.EventTypeConnectionError, middlewareConnectionError)
-	socketmodeHandler.Handle(socketmode.EventTypeConnected, middlewareConnected)
+	b.socketmodeHandler.Handle(socketmode.EventTypeConnecting, middlewareConnecting)
+	b.socketmodeHandler.Handle(socketmode.EventTypeConnectionError, middlewareConnectionError)
+	b.socketmodeHandler.Handle(socketmode.EventTypeConnected, middlewareConnected)
 
 	// Handle all EventsAPI
-	socketmodeHandler.Handle(socketmode.EventTypeEventsAPI, middlewareEventsAPIWithBot(b))
+	b.socketmodeHandler.Handle(socketmode.EventTypeEventsAPI, middlewareEventsAPIWithBot(b))
 
 	// Handle a specific event from EventsAPI
-	socketmodeHandler.HandleEvents(slackevents.AppMention, middlewareAppMentionEvent)
+	b.socketmodeHandler.HandleEvents(slackevents.AppMention, middlewareAppMentionEvent)
 
-	socketmodeHandler.RunEventLoopContext(ctx)
+	b.listenerEnabled = true
+	b.socketmodeHandler.RunEventLoopContext(ctx)
 }
 
 func middlewareEventsAPI(evt *socketmode.Event, client *socketmode.Client, b *Bot) {
@@ -264,4 +275,29 @@ func (b *Bot) UnknownCommand(h Handler) {
 // Register registers a Command
 func (b *Bot) Register(cmd CommandInterface) {
 	b.Commands = append(b.Commands, cmd)
+}
+
+func (b *Bot) RegisterSlashCommand(cmd string, handler func(evt *socketmode.Event, client *socketmode.Client)) {
+	if b.listenerEnabled {
+		log.Fatal("RegisterSlashCommand must be called before Listen")
+	}
+	b.socketmodeHandler.HandleSlashCommand(cmd, handler)
+}
+
+func (b *Bot) RegisterInteraction(et slack.InteractionType, handler func(evt *socketmode.Event, client *socketmode.Client)) {
+	if b.listenerEnabled {
+		log.Fatal("RegisterSlashCommand must be called before Listen")
+	}
+	b.socketmodeHandler.HandleInteraction(et, handler)
+}
+
+func (b *Bot) RegisterEventHandler(et slackevents.EventsAPIType, handler func(evt *socketmode.Event, client *socketmode.Client)) {
+	if b.listenerEnabled {
+		log.Fatal("RegisterSlashCommand must be called before Listen")
+	}
+	if et == slackevents.AppMention {
+		log.Fatal("AppMention event type is reserved for Bot")
+		return
+	}
+	b.socketmodeHandler.HandleEvents(et, handler)
 }
