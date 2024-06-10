@@ -4,13 +4,15 @@ import (
 	"context"
 	"fmt"
 	"github.com/slack-go/slack"
+	"github.com/slack-go/slack/slackevents"
+	"github.com/slack-go/slack/socketmode"
 	"log"
 	"os"
 )
 
 // Bot is the main object
 type Bot struct {
-	RTM               *slack.RTM
+	SocketClient      *socketmode.Client
 	ID                string
 	Commands          []CommandInterface
 	ReplyOnly         bool
@@ -19,33 +21,46 @@ type Bot struct {
 }
 
 // New creates a new bot
-func New(token string) (*Bot, error) {
-	api := slack.New(token)
+func New(token string, appToken string) (*Bot, error) {
+	api := slack.New(
+		token,
+		slack.OptionDebug(false),
+		slack.OptionAppLevelToken(appToken),
+	)
+	socketClient := socketmode.New(
+		api,
+		socketmode.OptionDebug(false),
+	)
 
-	r, e  := api.AuthTest()
+	r, e := api.AuthTest()
 	if e != nil {
 		return nil, e
 	}
 
-	rtm := api.NewRTM()
-	bot := &Bot{RTM: rtm, ID: r.UserID}
+	bot := &Bot{SocketClient: socketClient, ID: r.UserID}
 	return bot, nil
 }
 
-// New creates a new bot with Debug
-func NewDebug(token string) (*Bot, error) {
-	api := slack.New(token,
+// NewDebug New creates a new bot with Debug
+func NewDebug(token string, appToken string) (*Bot, error) {
+	api := slack.New(
+		token,
 		slack.OptionDebug(true),
-		slack.OptionLog(log.New(os.Stdout, "slack-bot: ", log.Lshortfile|log.LstdFlags)),
+		slack.OptionLog(log.New(os.Stdout, "api: ", log.Lshortfile|log.LstdFlags)),
+		slack.OptionAppLevelToken(appToken),
+	)
+	socketClient := socketmode.New(
+		api,
+		socketmode.OptionDebug(true),
+		socketmode.OptionLog(log.New(os.Stdout, "socketmode: ", log.Lshortfile|log.LstdFlags)),
 	)
 
-	r, e  := api.AuthTest()
+	r, e := api.AuthTest()
 	if e != nil {
 		return nil, e
 	}
 
-	rtm := api.NewRTM()
-	bot := &Bot{RTM: rtm, ID: r.UserID}
+	bot := &Bot{SocketClient: socketClient, ID: r.UserID}
 	return bot, nil
 }
 
@@ -116,11 +131,12 @@ func (b *Bot) Say(channel, msg string, a ...interface{}) {
 }
 
 func (b *Bot) send(msg MessageInterface) {
-	b.RTM.SendMessage(&slack.OutgoingMessage{
-		Channel: msg.Channel(),
-		Text:    msg.Text(),
-		Type:    "message",
-	})
+	_, _, err := b.SocketClient.PostMessage(
+		msg.Channel(),
+		slack.MsgOptionText(msg.Text(), false))
+	if err != nil {
+		fmt.Printf("failed posting message: %v", err)
+	}
 }
 
 // BuildHelpText will build the help text
@@ -153,27 +169,85 @@ func (b *Bot) sendHelp(msg MessageInterface) {
 	b.Say(msg.Channel(), help)
 }
 
+func middlewareEventsAPIWithBot(b *Bot) socketmode.SocketmodeHandlerFunc {
+	return func(evt *socketmode.Event, client *socketmode.Client) {
+		middlewareEventsAPI(evt, client, b)
+	}
+}
+
 // Listen for message on socket
 func (b *Bot) Listen(ctx context.Context) {
-	go b.RTM.ManageConnection()
+	socketmodeHandler := socketmode.NewSocketmodeHandler(b.SocketClient)
 
-	for {
-		select {
-		case ev := <-b.RTM.IncomingEvents:
-			switch v := ev.Data.(type) {
-			case *slack.MessageEvent:
-				go b.process(NewMessage(v))
+	socketmodeHandler.Handle(socketmode.EventTypeConnecting, middlewareConnecting)
+	socketmodeHandler.Handle(socketmode.EventTypeConnectionError, middlewareConnectionError)
+	socketmodeHandler.Handle(socketmode.EventTypeConnected, middlewareConnected)
 
-			case *slack.RTMError:
-				fmt.Printf("Error: %s\n", v.Error())
+	// Handle all EventsAPI
+	socketmodeHandler.Handle(socketmode.EventTypeEventsAPI, middlewareEventsAPIWithBot(b))
 
-			case *slack.InvalidAuthEvent:
-				fmt.Printf("Invalid credentials")
-			}
-		case <-ctx.Done():
-			return
-		}
+	// Handle a specific event from EventsAPI
+	socketmodeHandler.HandleEvents(slackevents.AppMention, middlewareAppMentionEvent)
+
+	socketmodeHandler.RunEventLoopContext(ctx)
+}
+
+func middlewareEventsAPI(evt *socketmode.Event, client *socketmode.Client, b *Bot) {
+	eventsAPIEvent, ok := evt.Data.(slackevents.EventsAPIEvent)
+	if !ok {
+		client.Debugf("Ignored %+v\n", evt)
+		return
 	}
+
+	client.Ack(*evt.Request)
+
+	switch eventsAPIEvent.Type {
+	case slackevents.CallbackEvent:
+		innerEvent := eventsAPIEvent.InnerEvent
+		switch ev := innerEvent.Data.(type) {
+		case *slackevents.MessageEvent:
+			go b.process(NewMessage(ev))
+		case *slackevents.AppMentionEvent:
+			go b.process(NewMentionMessage(ev))
+		}
+	default:
+		client.Debugf("unhandled Events API event received")
+	}
+}
+
+func middlewareAppMentionEvent(evt *socketmode.Event, client *socketmode.Client) {
+
+	eventsAPIEvent, ok := evt.Data.(slackevents.EventsAPIEvent)
+	if !ok {
+		client.Debugf("Ignored %+v\n", evt)
+		return
+	}
+
+	client.Ack(*evt.Request)
+
+	ev, ok := eventsAPIEvent.InnerEvent.Data.(*slackevents.AppMentionEvent)
+	if !ok {
+		client.Debugf("Ignored %+v\n", ev)
+		return
+	}
+
+	fmt.Printf("We have been mentioned in %v\n", ev.Channel)
+	_, _, err := client.Client.PostMessage(ev.Channel, slack.MsgOptionText("Yes, hello.", false))
+	if err != nil {
+		fmt.Printf("failed posting message: %v", err)
+	}
+}
+
+func middlewareConnecting(evt *socketmode.Event, client *socketmode.Client) {
+	client.Debugf("Connecting to Slack with Socket Mode...")
+}
+
+func middlewareConnectionError(evt *socketmode.Event, client *socketmode.Client) {
+	client.Debugf("Connection failed. Retrying later...")
+}
+
+func middlewareConnected(evt *socketmode.Event, client *socketmode.Client) {
+	client.Debugf("Connected to Slack with Socket Mode.")
 }
 
 // Command adds a new command with custom handler

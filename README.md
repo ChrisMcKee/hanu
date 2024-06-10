@@ -12,6 +12,10 @@ The `Go` framework **hanu** is your best friend to create [Slack](https://slackh
 - Works fine as a **worker** on Heroku
 
 
+## V3 Release Note
+
+* Swapped RTM for SocketMode
+
 ## V2 Usage
 
 To use the package import:
@@ -32,7 +36,7 @@ This will make it so you have to type:
 !whisper I love turtles
 ```
 
-For the command to be recognised.  Setting the bot to not reply only means it will listen to
+For the command to be recognized.  Setting the bot to not reply only means it will listen to
 all messages in an attempt to find a command (except help will only be printed when bot is mentioned).
 
 Also, the `ConversationInterface` was changed to just `Convo` to save your wrists:
@@ -71,7 +75,7 @@ slack.SetReplyOnly(true).UnknownCommand(func(c hanu.Convo) {
 
 - [github.com/ChrisMcKee/allot](https://github.com/ChrisMcKee/allot) for parsing `cmd <param1:string> <param2:integer>` strings
 - [golang.org/x/net/websocket](http://golang.org/x/net/websocket) for websocket communication with Slack
-- [github.com/nlopes/slack](http://github.com/nlopes/slack) for real time communication with Slack
+- [github.com/slack-go/slack](https://github.com/slack-go/slack) for real time communication with Slack
 
 ## Credits
 

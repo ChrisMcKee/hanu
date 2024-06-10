@@ -1,10 +1,9 @@
 package hanu
 
 import (
+	"github.com/slack-go/slack/slackevents"
 	"regexp"
 	"strings"
-
-	"github.com/slack-go/slack"
 )
 
 // MessageInterface defines the message interface
@@ -21,7 +20,17 @@ type MessageInterface interface {
 	Channel() string
 }
 
-func NewMessage(ev *slack.MessageEvent) Message {
+func NewMessage(ev *slackevents.MessageEvent) Message {
+	msg := Message{}
+	msg.ChannelID = ev.Channel
+	msg.Message = ev.Text
+	msg.OriginalMessage = ev.Text
+	msg.UserID = ev.User
+	msg.Type = ev.Type
+	return msg
+}
+
+func NewMentionMessage(ev *slackevents.AppMentionEvent) Message {
 	msg := Message{}
 	msg.ChannelID = ev.Channel
 	msg.Message = ev.Text
