@@ -25,6 +25,17 @@ func main() {
 			conv.Reply("Thanks for asking! I'm running since `%s`", time.Since(Start))
 		}))
 
+	bot.Register(hanu.NewCommand("getuser",
+		"Get user info",
+		func(conv hanu.Convo) {
+			myUser, err := bot.GetUserName(conv)
+			if err != nil {
+				conv.Reply("Error getting user info: %s", err)
+				return
+			}
+			conv.Reply("Thanks for asking! Your username is `%s`", myUser)
+		}))
+
 	bot.Register(hanu.NewCommand("coffee",
 		"Reply with the coffee action dialog",
 		func(conv hanu.Convo) {
@@ -82,68 +93,85 @@ func main() {
 		client.Debugf("button clicked!")
 		client.Ack(*evt.Request)
 	})
+	//
+	//// You can register the same interaction type multiple times with separate filters.
+	//bot.RegisterInteraction(slack.InteractionTypeInteractionMessage, func(evt *socketmode.Event, client *socketmode.Client) {
+	//	callback, ok := evt.Data.(slack.InteractionCallback)
+	//	if !ok {
+	//		fmt.Printf("Ignored %+v\n", evt)
+	//		return
+	//	}
+	//
+	//	//var payload interface{}
+	//
+	//	switch callback.CallbackID {
+	//	case bot.ID + "coffee_order_form_x":
+	//		msg, done := coffeeRequest(callback, client)
+	//		if done {
+	//			client.Ack(*evt.Request, msg)
+	//			return
+	//		}
+	//		client.Ack(*evt.Request, msg)
+	//		break
+	//	}
+	//
+	//})
+	//
+	//bot.RegisterInteraction(slack.InteractionTypeInteractionMessage, func(evt *socketmode.Event, client *socketmode.Client) {
+	//	callback, ok := evt.Data.(slack.InteractionCallback)
+	//	if !ok {
+	//		fmt.Printf("Ignored %+v\n", evt)
+	//		return
+	//	}
+	//
+	//	//var payload interface{}
+	//
+	//	switch callback.CallbackID {
+	//	case bot.ID + "coffee_order_form":
+	//		msg, done := coffeeRequest(callback, client)
+	//		if done {
+	//			client.Ack(*evt.Request, msg)
+	//			return
+	//		}
+	//		client.Ack(*evt.Request, msg)
+	//		break
+	//	}
+	//
+	//})
+	//
+	//bot.RegisterInteraction(slack.InteractionTypeDialogSubmission, func(evt *socketmode.Event, client *socketmode.Client) {
+	//	callback, ok := evt.Data.(slack.InteractionCallback)
+	//	if !ok {
+	//		fmt.Printf("Ignored %+v\n", evt)
+	//		return
+	//	}
+	//
+	//	var payload interface{}
+	//	switch callback.CallbackID {
+	//	case callback.User.ID + "coffee_order_form":
+	//		// Save the order
+	//		client.Debugf("Order received: %+v\n", callback.Submission)
+	//		client.Ack(*evt.Request, payload)
+	//		break
+	//	}
+	//
+	//})
 
-	// You can register the same interaction type multiple times with separate filters.
-	bot.RegisterInteraction(slack.InteractionTypeInteractionMessage, func(evt *socketmode.Event, client *socketmode.Client) {
-		callback, ok := evt.Data.(slack.InteractionCallback)
-		if !ok {
-			fmt.Printf("Ignored %+v\n", evt)
-			return
-		}
-
-		//var payload interface{}
-
-		switch callback.CallbackID {
-		case bot.ID + "coffee_order_form_x":
-			msg, done := coffeeRequest(callback, client)
+	bot.RegisterDialogInteraction(hanu.DialogCfg{
+		Prompt: func(cb slack.InteractionCallback, evt *socketmode.Event, client *socketmode.Client) error {
+			msg, done := coffeeRequest(cb, client)
 			if done {
 				client.Ack(*evt.Request, msg)
-				return
+				return nil
 			}
-			client.Ack(*evt.Request, msg)
-			break
-		}
-
-	})
-
-	bot.RegisterInteraction(slack.InteractionTypeInteractionMessage, func(evt *socketmode.Event, client *socketmode.Client) {
-		callback, ok := evt.Data.(slack.InteractionCallback)
-		if !ok {
-			fmt.Printf("Ignored %+v\n", evt)
-			return
-		}
-
-		//var payload interface{}
-
-		switch callback.CallbackID {
-		case bot.ID + "coffee_order_form":
-			msg, done := coffeeRequest(callback, client)
-			if done {
-				client.Ack(*evt.Request, msg)
-				return
-			}
-			client.Ack(*evt.Request, msg)
-			break
-		}
-
-	})
-
-	bot.RegisterInteraction(slack.InteractionTypeDialogSubmission, func(evt *socketmode.Event, client *socketmode.Client) {
-		callback, ok := evt.Data.(slack.InteractionCallback)
-		if !ok {
-			fmt.Printf("Ignored %+v\n", evt)
-			return
-		}
-
-		var payload interface{}
-		switch callback.CallbackID {
-		case callback.User.ID + "coffee_order_form":
-			// Save the order
-			client.Debugf("Order received: %+v\n", callback.Submission)
-			client.Ack(*evt.Request, payload)
-			break
-		}
-
+			return nil
+		},
+		Handler: func(cb slack.InteractionCallback, evt *socketmode.Event, client *socketmode.Client) error {
+			client.Debugf("Order received: %+v\n", cb.Submission)
+			client.Ack(*evt.Request)
+			return nil
+		},
+		CallbackId: "coffee_order_form",
 	})
 
 	ctx, cancel := context.WithCancel(context.Background())
