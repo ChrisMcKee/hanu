@@ -54,11 +54,42 @@ func main() {
 			}
 
 			options := slack.MsgOptionAttachments(attachment)
-
 			if _, _, err := bot.SocketClient.Client.PostMessage(conv.Message().Channel(), options); err != nil {
 				fmt.Printf("failed to post message: %s", err)
 			}
 		}))
+
+	bot.RegisterDialogInteraction(hanu.DialogCfg{
+		Dialog: func(b *hanu.Bot, cb slack.InteractionCallback, evt *socketmode.Event, client *socketmode.Client) error {
+			msg, done := coffeeRequest(cb, client)
+			if done {
+				client.Ack(*evt.Request, msg)
+				return nil
+			}
+			return nil
+		},
+		SubmissionHandler: func(b *hanu.Bot, cb slack.InteractionCallback, evt *socketmode.Event, client *socketmode.Client) error {
+			client.Debugf("Order received: %+v\n", cb.Submission)
+
+			go func() {
+				time.Sleep(time.Second * 5)
+
+				attachment := slack.Attachment{
+					Text:       ":white_check_mark: Order received!",
+					CallbackID: b.ID + "coffee_order_form",
+				}
+				options := slack.MsgOptionAttachments(attachment)
+				if _, _, err := client.PostMessage(cb.Channel.ID, options); err != nil {
+					log.Print("[ERROR] Failed to post message")
+				}
+				return
+			}()
+
+			client.Ack(*evt.Request)
+			return nil
+		},
+		CallbackId: "coffee_order_form",
+	})
 
 	bot.RegisterSlashCommand("/modaltest", func(evt *socketmode.Event, client *socketmode.Client) {
 		modalRequest := generateModalRequest()
@@ -92,86 +123,6 @@ func main() {
 
 		client.Debugf("button clicked!")
 		client.Ack(*evt.Request)
-	})
-	//
-	//// You can register the same interaction type multiple times with separate filters.
-	//bot.RegisterInteraction(slack.InteractionTypeInteractionMessage, func(evt *socketmode.Event, client *socketmode.Client) {
-	//	callback, ok := evt.Data.(slack.InteractionCallback)
-	//	if !ok {
-	//		fmt.Printf("Ignored %+v\n", evt)
-	//		return
-	//	}
-	//
-	//	//var payload interface{}
-	//
-	//	switch callback.CallbackID {
-	//	case bot.ID + "coffee_order_form_x":
-	//		msg, done := coffeeRequest(callback, client)
-	//		if done {
-	//			client.Ack(*evt.Request, msg)
-	//			return
-	//		}
-	//		client.Ack(*evt.Request, msg)
-	//		break
-	//	}
-	//
-	//})
-	//
-	//bot.RegisterInteraction(slack.InteractionTypeInteractionMessage, func(evt *socketmode.Event, client *socketmode.Client) {
-	//	callback, ok := evt.Data.(slack.InteractionCallback)
-	//	if !ok {
-	//		fmt.Printf("Ignored %+v\n", evt)
-	//		return
-	//	}
-	//
-	//	//var payload interface{}
-	//
-	//	switch callback.CallbackID {
-	//	case bot.ID + "coffee_order_form":
-	//		msg, done := coffeeRequest(callback, client)
-	//		if done {
-	//			client.Ack(*evt.Request, msg)
-	//			return
-	//		}
-	//		client.Ack(*evt.Request, msg)
-	//		break
-	//	}
-	//
-	//})
-	//
-	//bot.RegisterInteraction(slack.InteractionTypeDialogSubmission, func(evt *socketmode.Event, client *socketmode.Client) {
-	//	callback, ok := evt.Data.(slack.InteractionCallback)
-	//	if !ok {
-	//		fmt.Printf("Ignored %+v\n", evt)
-	//		return
-	//	}
-	//
-	//	var payload interface{}
-	//	switch callback.CallbackID {
-	//	case callback.User.ID + "coffee_order_form":
-	//		// Save the order
-	//		client.Debugf("Order received: %+v\n", callback.Submission)
-	//		client.Ack(*evt.Request, payload)
-	//		break
-	//	}
-	//
-	//})
-
-	bot.RegisterDialogInteraction(hanu.DialogCfg{
-		Prompt: func(cb slack.InteractionCallback, evt *socketmode.Event, client *socketmode.Client) error {
-			msg, done := coffeeRequest(cb, client)
-			if done {
-				client.Ack(*evt.Request, msg)
-				return nil
-			}
-			return nil
-		},
-		Handler: func(cb slack.InteractionCallback, evt *socketmode.Event, client *socketmode.Client) error {
-			client.Debugf("Order received: %+v\n", cb.Submission)
-			client.Ack(*evt.Request)
-			return nil
-		},
-		CallbackId: "coffee_order_form",
 	})
 
 	ctx, cancel := context.WithCancel(context.Background())

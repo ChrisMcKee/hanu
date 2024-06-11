@@ -7,12 +7,12 @@ import (
 	"log"
 )
 
-type DialogEvtHandler func(cb slack.InteractionCallback, evt *socketmode.Event, client *socketmode.Client) error
+type DialogEvtHandler func(b *Bot, cb slack.InteractionCallback, evt *socketmode.Event, client *socketmode.Client) error
 
 type DialogCfg struct {
-	Prompt     DialogEvtHandler
-	Handler    DialogEvtHandler
-	CallbackId string
+	Dialog            DialogEvtHandler
+	SubmissionHandler DialogEvtHandler
+	CallbackId        string
 }
 
 // RegisterDialogInteraction registers a dialog interaction.
@@ -32,7 +32,7 @@ func (b *Bot) RegisterDialogInteraction(evtHandlerCfg DialogCfg) {
 
 		switch callback.CallbackID {
 		case b.ID + evtHandlerCfg.CallbackId:
-			err := evtHandlerCfg.Prompt(callback, evt, client)
+			err := evtHandlerCfg.Dialog(b, callback, evt, client)
 			if err != nil {
 				fmt.Printf("Error %+v\n", err)
 			}
@@ -50,7 +50,7 @@ func (b *Bot) RegisterDialogInteraction(evtHandlerCfg DialogCfg) {
 
 		switch callback.CallbackID {
 		case callback.User.ID + evtHandlerCfg.CallbackId:
-			err := evtHandlerCfg.Handler(callback, evt, client)
+			err := evtHandlerCfg.SubmissionHandler(b, callback, evt, client)
 			if err != nil {
 				fmt.Printf("Error %+v\n", err)
 			}
