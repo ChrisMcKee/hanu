@@ -7,6 +7,7 @@ import (
 	"github.com/slack-go/slack"
 	"github.com/slack-go/slack/socketmode"
 	"log"
+	"time"
 )
 
 func init() {
@@ -32,6 +33,39 @@ func init() {
 				fmt.Printf("failed to post message: %s", err)
 			}
 		})
+
+	RegisterDialogInteraction(hanu.DialogCfg{
+		Type:       hanu.Dialog,
+		CallbackId: "coffee_order_form",
+		Dialog: func(b *hanu.Bot, cb slack.InteractionCallback, evt *socketmode.Event, client *socketmode.Client) error {
+			msg, done := coffeeRequest(cb, client)
+			if done {
+				client.Ack(*evt.Request, msg)
+				return nil
+			}
+			return nil
+		},
+		SubmissionHandler: func(b *hanu.Bot, cb slack.InteractionCallback, evt *socketmode.Event, client *socketmode.Client) error {
+			client.Debugf("Order received: %+v\n", cb.Submission)
+
+			go func() {
+				time.Sleep(time.Second * 5)
+
+				attachment := slack.Attachment{
+					Text:       ":white_check_mark: Order received!",
+					CallbackID: b.ID + "coffee_order_form",
+				}
+				options := slack.MsgOptionAttachments(attachment)
+				if _, _, err := client.PostMessage(cb.Channel.ID, options); err != nil {
+					log.Print("[ERROR] Failed to post message")
+				}
+				return
+			}()
+
+			client.Ack(*evt.Request)
+			return nil
+		},
+	})
 }
 
 // Services the command

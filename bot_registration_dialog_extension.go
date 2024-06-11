@@ -7,9 +7,21 @@ import (
 	"log"
 )
 
+type DialogueType int64
+
+const (
+	Dialog DialogueType = 0
+	Modal  DialogueType = 1
+)
+const (
+	dialog string = "dialog"
+	modal         = "modal"
+)
+
 type DialogEvtHandler func(b *Bot, cb slack.InteractionCallback, evt *socketmode.Event, client *socketmode.Client) error
 
 type DialogCfg struct {
+	Type              DialogueType
 	Dialog            DialogEvtHandler
 	SubmissionHandler DialogEvtHandler
 	CallbackId        string
@@ -49,6 +61,47 @@ func (b *Bot) RegisterDialogInteraction(evtHandlerCfg DialogCfg) {
 		}
 
 		switch callback.CallbackID {
+		case callback.User.ID + evtHandlerCfg.CallbackId:
+			err := evtHandlerCfg.SubmissionHandler(b, callback, evt, client)
+			if err != nil {
+				fmt.Printf("Error %+v\n", err)
+			}
+			client.Ack(*evt.Request)
+		}
+	})
+}
+
+func (b *Bot) RegisterModalInteraction(evtHandlerCfg DialogCfg) {
+	if b.listenerEnabled {
+		log.Fatal("RegisterSlashCommand must be called before Listen")
+	}
+
+	b.RegisterInteraction(slack.InteractionTypeInteractionMessage, func(evt *socketmode.Event, client *socketmode.Client) {
+		callback, ok := evt.Data.(slack.InteractionCallback)
+		if !ok {
+			fmt.Printf("Ignored %+v\n", evt)
+			return
+		}
+
+		switch callback.CallbackID {
+		case b.ID + evtHandlerCfg.CallbackId:
+			err := evtHandlerCfg.Dialog(b, callback, evt, client)
+			if err != nil {
+				fmt.Printf("Error %+v\n", err)
+			}
+			client.Ack(*evt.Request)
+			break
+		}
+	})
+
+	b.RegisterInteraction(slack.InteractionTypeViewSubmission, func(evt *socketmode.Event, client *socketmode.Client) {
+		callback, ok := evt.Data.(slack.InteractionCallback)
+		if !ok {
+			fmt.Printf("Ignored %+v\n", evt)
+			return
+		}
+
+		switch callback.View.CallbackID {
 		case callback.User.ID + evtHandlerCfg.CallbackId:
 			err := evtHandlerCfg.SubmissionHandler(b, callback, evt, client)
 			if err != nil {
