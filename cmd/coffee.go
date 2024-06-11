@@ -2,11 +2,39 @@ package main
 
 import (
 	"context"
+	"fmt"
+	"github.com/ChrisMcKee/hanu"
 	"github.com/slack-go/slack"
 	"github.com/slack-go/slack/socketmode"
 	"log"
 )
 
+func init() {
+	Register("coffee",
+		"Reply with the coffee action dialog",
+		func(conv hanu.Convo) {
+			attachment := slack.Attachment{
+				Text:       "I am Coffeebot :robot_face:, and I'm here to help bring you fresh coffee :coffee:",
+				Color:      "#3AA3E3",
+				CallbackID: Bot.ID + "coffee_order_form",
+				Actions: []slack.AttachmentAction{
+					{
+						Name:  "coffee_order",
+						Text:  ":coffee: Order Coffee",
+						Type:  "button",
+						Value: "coffee_order",
+					},
+				},
+			}
+
+			options := slack.MsgOptionAttachments(attachment)
+			if _, _, err := Bot.SocketClient.Client.PostMessage(conv.Message().Channel(), options); err != nil {
+				fmt.Printf("failed to post message: %s", err)
+			}
+		})
+}
+
+// Services the command
 var coffeeOrders = make(map[string]map[string]string)
 
 func coffeeRequest(message slack.InteractionCallback, client *socketmode.Client) (slack.Message, bool) {
