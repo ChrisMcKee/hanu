@@ -2,9 +2,10 @@ package hanu
 
 import (
 	"fmt"
+	"log"
+
 	"github.com/slack-go/slack"
 	"github.com/slack-go/slack/socketmode"
-	"log"
 )
 
 type DialogueType int64

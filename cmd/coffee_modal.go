@@ -2,11 +2,12 @@ package main
 
 import (
 	"fmt"
+	"log"
+	"time"
+
 	"github.com/ChrisMcKee/hanu"
 	"github.com/slack-go/slack"
 	"github.com/slack-go/slack/socketmode"
-	"log"
-	"time"
 )
 
 func init() {

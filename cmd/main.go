@@ -2,12 +2,13 @@ package main
 
 import (
 	"context"
-	"github.com/ChrisMcKee/hanu"
 	"log"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/ChrisMcKee/hanu"
 )
 
 var Start time.Time

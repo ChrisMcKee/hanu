@@ -3,11 +3,12 @@ package hanu
 import (
 	"context"
 	"fmt"
+	"log"
+	"os"
+
 	"github.com/slack-go/slack"
 	"github.com/slack-go/slack/slackevents"
 	"github.com/slack-go/slack/socketmode"
-	"log"
-	"os"
 )
 
 // Bot is the main object
@@ -178,7 +179,7 @@ func (b *Bot) sendHelp(msg MessageInterface) {
 		help = "<@" + msg.User() + ">: " + help
 	}
 
-	b.Say(msg.Channel(), help)
+	b.Say(msg.Channel(), "%s", help)
 }
 
 // Listen for message on socket

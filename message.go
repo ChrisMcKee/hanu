@@ -1,9 +1,10 @@
 package hanu
 
 import (
-	"github.com/slack-go/slack/slackevents"
 	"regexp"
 	"strings"
+
+	"github.com/slack-go/slack/slackevents"
 )
 
 // MessageInterface defines the message interface
